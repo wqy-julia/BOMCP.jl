@@ -36,7 +36,7 @@ export
     children,
     n_children,
     isroots
-include("./bomcp/tree.jl")
+include("./tree.jl")
 
 export
     estimate_value,
@@ -47,52 +47,52 @@ export
     rollout,
     init_Q,
     init_N
-include("./bomcp/node_initialization.jl")
+include("./node_initialization.jl")
 
 export
     GaussianObsUpdater,
     EKFUpdater,
     x2s, s2x, gen_A, gen_C
-include("./bomcp/beliefs.jl")
+include("./beliefs.jl")
 
 export
     ReportWhenUsed,
     default_action
-include("./bomcp/default_action.jl")
+include("./default_action.jl")
 
 export
     GPLA,
     reset_gp!,
     predict_fix,
     predict_test
-include("./bomcp/gaussian_process.jl")
+include("./gaussian_process.jl")
 
 export
     rand_action,
     build_gp,
     ActionSelector,
     BOActionSelector
-include("./bomcp/action_selector.jl")
+include("./action_selector.jl")
 
 export
     update_gp!,
     next_action,
     vectorize, 
     build_action_set
-include("./bomcp/bayes_opt.jl")
+include("./bayes_opt.jl")
 
 export
     BOMCPSolver,
     BOMCPPlanner
-include("./bomcp/solver.jl")
+include("./solver.jl")
 
 export 
     clear_tree!,
     simulate,
     action,
     action_info
-include("./bomcp/search.jl")
+include("./search.jl")
 
-include("./bomcp/visualization.jl")
+include("./visualization.jl")
 
 end
