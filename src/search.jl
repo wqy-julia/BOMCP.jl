@@ -83,6 +83,7 @@ function simulate(dpw::BOMCPPlanner, s, bnode::Int, d::Int)
     new_node = false
     if length(tree.b_children[bnode]) <= sol.k_action*tree.n_b[bnode]^sol.alpha_action
         a = next_action(sol.action_selector, dpw.p, b, BOMCPBeliefNode(tree, bnode)) # action generation step
+        # a = next_ow_action(sol.action_selector, dpw.p, b, BOMCPBeliefNode(tree, bnode))
         if !(a in tree.a_labels[tree.b_children[bnode]])
             n0 = init_N(sol.init_N, dpw.p, b, a)
             banode = insert_action_node!(tree, bnode, a, n0,

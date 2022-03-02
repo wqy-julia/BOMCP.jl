@@ -51,6 +51,15 @@ function acquire_max_action(opt, lowerbounds, upperbounds, restarts)
     maxf, maxx
 end
 
+# NEW ADDED
+function acquire_rand_action(opt, lowerbounds, upperbounds, restarts)
+    seq = BayesianOptimization.ScaledLHSIterator(lowerbounds, upperbounds, restarts)
+    x0 = seq[0]
+    f, x, ret = NLopt.optimize(opt, x0)
+    ret == NLopt.FORCED_STOP && throw(InterruptException())
+    f, x
+end
+
 function action_function(acq, b, model)
     x -> begin
         x_test = [reshape(x, :, 1); b]
@@ -146,6 +155,73 @@ function next_action(o::BOActionSelector, p::Union{POMDP, MDP}, b, bnode)
                 f = BayesianOptimization.wrap_gradient(action_function(o.acquisition_function, vector_belief, gp))
                 NLopt.max_objective!(o.optim, f)
                 _, action = acquire_max_action(o.optim, o.lower_bounds, o.upper_bounds, 100) # restarts)
+            end
+        end
+    end
+    return action
+end
+
+#NEW ADDED
+function next_ow_action(o::BOActionSelector, p::Union{POMDP, MDP}, b, bnode)
+    if haskey(o.b_a_dict, b)
+        acts = o.b_a_dict[b]
+    else
+        if o.discrete_actions
+            acts = build_action_set(POMDPs.actions(p, b))
+        else
+            acts = POMDPs.actions(p, b)
+        end
+        o.b_a_dict[b] = acts
+    end
+    b_node_id = bnode.index
+    tree = bnode.tree
+    if o.gp isa Dict
+        if haskey(o.gp, b_node_id)
+            gp = o.gp[b_node_id]
+        else
+            mean = isnothing(o.mean_params) ? o.mean_type() : o.mean_type(o.mean_params...)
+            kernel = isnothing(o.kernel_params) ? o.kernel_type() : o.kernel_type(o.kernel_params...)
+            x = zeros(Float64, o.action_dims, 0)
+            y = zeros(Float64, 0)
+            gp = GPE(x, y,
+                    mean,
+                    kernel,
+                    o.log_noise)
+            o.gp[b_node_id] = gp
+        end
+        belief_x = false
+    else
+        gp = o.gp
+        belief_x = true
+    end
+    n_obs = size(gp.x, 2)
+    if n_obs == 0
+        if typeof(o.initial_action) <: Function
+            action = o.initial_action(gp, acts)
+        elseif typeof(o.initial_action) <: Policy
+            action = POMDPs.action(o.initial_action, b)
+        else
+            action = o.initial_action in acts ? o.initial_action : throw(AssertionError("The provided initial action is not in the set returned by actions(pomdp, b)"))
+        end
+    else
+        act_idxs = tree.b_children[b_node_id]
+        obs_acts = tree.a_labels[act_idxs]
+        obs_q = tree.q[act_idxs]
+        if o.discrete_actions
+            new_acts = collect(setdiff(acts, obs_acts))
+            return rand(new_acts)
+        else
+            if o.gp isa Dict
+                f = BayesianOptimization.wrap_gradient(BayesianOptimization.acquisitionfunction(o.acquisition_function, gp))
+                NLopt.max_objective!(o.optim, f)
+                _, action = acquire_rand_action(o.optim, o.lower_bounds, o.upper_bounds, 100) # restarts)
+            else
+                vector_belief = zeros(Float64, o.belief_dims)
+                vector_belief = vectorize!(vector_belief, o.belief_dims, b)
+                vector_belief .*= o.belief_λ
+                f = BayesianOptimization.wrap_gradient(action_function(o.acquisition_function, vector_belief, gp))
+                NLopt.max_objective!(o.optim, f)
+                _, action = acquire_rand_action(o.optim, o.lower_bounds, o.upper_bounds, 100) # restarts)
             end
         end
     end

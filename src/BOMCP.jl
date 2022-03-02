@@ -77,6 +77,7 @@ include("./action_selector.jl")
 export
     update_gp!,
     next_action,
+    next_ow_action,
     vectorize, 
     build_action_set
 include("./bayes_opt.jl")
