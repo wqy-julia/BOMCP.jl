@@ -30,6 +30,9 @@ function POMDPModelTools.action_info(p::BOMCPPlanner, b; tree_in_info=false)
         for i = 1:p.solver.n_iterations
             nquery += 1
             s = rand(p.rng, b)
+            while isterminal(p.p, s)
+                s = rand(p.rng, b)
+            end
             simulate(p, s, bnode, p.solver.depth)
             if p.gp isa GPLA
                 update_gp_buffer!(p.solver.action_selector)
