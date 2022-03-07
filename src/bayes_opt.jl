@@ -54,11 +54,10 @@ end
 # NEW ADDED
 function acquire_rand_action(opt, lowerbounds, upperbounds, restarts)
     seq = BayesianOptimization.ScaledLHSIterator(lowerbounds, upperbounds, restarts)
-    x0 = seq[0]
-    f, x, ret = NLopt.optimize(opt, x0)
-    ret == NLopt.FORCED_STOP && throw(InterruptException())
-    f, x
-end
+    for x0 in seq
+        return 0, x0
+    end
+    0, nothing
 
 function action_function(acq, b, model)
     x -> begin
@@ -215,6 +214,7 @@ function next_ow_action(o::BOActionSelector, p::Union{POMDP, MDP}, b, bnode)
                 f = BayesianOptimization.wrap_gradient(BayesianOptimization.acquisitionfunction(o.acquisition_function, gp))
                 NLopt.max_objective!(o.optim, f)
                 _, action = acquire_rand_action(o.optim, o.lower_bounds, o.upper_bounds, 100) # restarts)
+                action = Vector{Float64}(action)
             else
                 vector_belief = zeros(Float64, o.belief_dims)
                 vector_belief = vectorize!(vector_belief, o.belief_dims, b)
@@ -222,6 +222,7 @@ function next_ow_action(o::BOActionSelector, p::Union{POMDP, MDP}, b, bnode)
                 f = BayesianOptimization.wrap_gradient(action_function(o.acquisition_function, vector_belief, gp))
                 NLopt.max_objective!(o.optim, f)
                 _, action = acquire_rand_action(o.optim, o.lower_bounds, o.upper_bounds, 100) # restarts)
+                action = Vector{Float64}(action)
             end
         end
     end
