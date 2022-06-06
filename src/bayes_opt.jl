@@ -58,6 +58,7 @@ function acquire_rand_action(opt, lowerbounds, upperbounds, restarts)
         return 0, x0
     end
     0, nothing
+end
 
 function action_function(acq, b, model)
     x -> begin
